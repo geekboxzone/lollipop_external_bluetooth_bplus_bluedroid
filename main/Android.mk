@@ -78,7 +78,6 @@ LOCAL_SRC_FILES += \
     ../btif/src/btif_profile_queue.c \
     ../btif/src/btif_fm.c
 
-
 # callouts
 LOCAL_SRC_FILES+= \
     ../btif/co/bta_sys_co.c \
@@ -145,6 +144,9 @@ ifeq ($(TARGET_PRODUCT), full_maguro)
      LOCAL_CFLAGS += -DTARGET_MAGURO
 endif
 
+ifeq ($(strip $(BOARD_CONNECTIVITY_MODULE)),rda587x)
+    LOCAL_CFLAGS += -DRDA587X_BLUETOOTH
+endif
 # Fix this
 #ifeq ($(TARGET_VARIANT), eng)
 #     LOCAL_CFLAGS += -O2 # and other production release flags

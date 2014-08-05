@@ -424,7 +424,7 @@ int config_hci_snoop_log(uint8_t enable)
     return btif_config_hci_snoop_log(enable);
 }
 
-static const bt_interface_t bluetoothInterface = {
+/*static*/ const bt_interface_t bluetoothInterface = {
     sizeof(bluetoothInterface),
     init,
     enable,

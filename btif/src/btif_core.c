@@ -37,6 +37,7 @@
 
 #define LOG_TAG "BTIF_CORE"
 #include "btif_api.h"
+#include "bt_utils.h"
 #include "bta_api.h"
 #include "gki.h"
 #include "btu.h"
@@ -91,7 +92,7 @@ typedef enum {
     BTIF_CORE_STATE_ENABLING,
     BTIF_CORE_STATE_ENABLED,
     BTIF_CORE_STATE_RADIO_ENABLED,
-    BTIF_CORE_STATE_DISABLING,
+    BTIF_CORE_STATE_DISABLING
 } btif_core_state_t;
 
 /************************************************************************************
@@ -802,7 +803,41 @@ void btif_enable_bluetooth_evt(tBTA_STATUS status, BD_ADDR local_bd)
 #endif
     /* add passing up bd address as well ? */
 
-    btif_handle_bluetooth_enable_evt(status);
+    /* callback to HAL */
+    if (status == BTA_SUCCESS)
+    {
+        /* initialize a2dp service */
+        btif_av_init();
+
+        /* init rfcomm & l2cap api */
+        btif_sock_init();
+
+        /* init pan */
+        btif_pan_init();
+
+        /* load did configuration */
+        bte_load_did_conf(BTE_DID_CONF_FILE);
+
+#ifdef BTIF_DM_OOB_TEST
+        btif_dm_load_local_oob();
+#endif
+        /* now fully enabled, update state */
+        btif_core_state = BTIF_CORE_STATE_ENABLED;
+
+        HAL_CBACK(bt_hal_cbacks, adapter_state_changed_cb, BT_STATE_ON);
+    }
+    else
+    {
+        /* cleanup rfcomm & l2cap api */
+        btif_sock_cleanup();
+
+        btif_pan_cleanup();
+
+        /* we failed to enable, reset state */
+        btif_core_state = BTIF_CORE_STATE_DISABLED;
+
+        HAL_CBACK(bt_hal_cbacks, adapter_state_changed_cb, BT_STATE_OFF);
+    }
 }
 
 /*******************************************************************************
@@ -1016,6 +1051,14 @@ bt_status_t btif_shutdown_bluetooth(void)
 {
     BTIF_TRACE_DEBUG1("%s", __FUNCTION__);
 
+    if (btif_core_state == BTIF_CORE_STATE_DISABLING)
+    {
+        BTIF_TRACE_WARNING0("shutdown during disabling");
+        /* shutdown called before disabling is done */
+        btif_shutdown_pending = 1;
+        return BT_STATUS_NOT_READY;
+    }
+
     if (btif_is_radio_enabled())
     {
         BTIF_TRACE_WARNING0("shutdown while still enabled, initiate disable");
@@ -1046,6 +1089,8 @@ bt_status_t btif_shutdown_bluetooth(void)
     bte_main_shutdown();
 
     btif_dut_mode = 0;
+
+    bt_utils_cleanup();
 
     BTIF_TRACE_DEBUG1("%s done", __FUNCTION__);
 

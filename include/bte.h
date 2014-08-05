@@ -106,9 +106,6 @@ extern const UINT8 bte_version_string[];
 /* BTIF version string */
 extern const UINT8 btif_version_string[];
 
-/* AMPAK GPS FM patch version string */
-extern const UINT8 GPS_FM_patch_version_string[];
-
 typedef struct tBAUD_REG_tag {
     UINT8 DHBR;
     UINT8 DLBR;
