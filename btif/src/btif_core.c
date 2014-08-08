@@ -803,41 +803,7 @@ void btif_enable_bluetooth_evt(tBTA_STATUS status, BD_ADDR local_bd)
 #endif
     /* add passing up bd address as well ? */
 
-    /* callback to HAL */
-    if (status == BTA_SUCCESS)
-    {
-        /* initialize a2dp service */
-        btif_av_init();
-
-        /* init rfcomm & l2cap api */
-        btif_sock_init();
-
-        /* init pan */
-        btif_pan_init();
-
-        /* load did configuration */
-        bte_load_did_conf(BTE_DID_CONF_FILE);
-
-#ifdef BTIF_DM_OOB_TEST
-        btif_dm_load_local_oob();
-#endif
-        /* now fully enabled, update state */
-        btif_core_state = BTIF_CORE_STATE_ENABLED;
-
-        HAL_CBACK(bt_hal_cbacks, adapter_state_changed_cb, BT_STATE_ON);
-    }
-    else
-    {
-        /* cleanup rfcomm & l2cap api */
-        btif_sock_cleanup();
-
-        btif_pan_cleanup();
-
-        /* we failed to enable, reset state */
-        btif_core_state = BTIF_CORE_STATE_DISABLED;
-
-        HAL_CBACK(bt_hal_cbacks, adapter_state_changed_cb, BT_STATE_OFF);
-    }
+    btif_handle_bluetooth_enable_evt(status);
 }
 
 /*******************************************************************************
